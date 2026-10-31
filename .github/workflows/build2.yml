@@ -1,0 +1,30 @@
+name: Build Dumper
+on:
+  workflow_dispatch:
+    inputs:
+      package_name:
+        description: "Paquete del juego"
+        required: true
+        default: "com.pixonic.wwr"
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 11
+          cache: gradle
+      - name: Compilar
+        run: |
+          chmod +x ./gradlew
+          sed -i 's/moduleDescription = "/moduleDescription = "(${{ github.event.inputs.package_name }}) /g' module.gradle
+          sed -i "s/com.game.packagename/${{ github.event.inputs.package_name }}/g" module/src/main/cpp/game.h
+          grep GamePackageName module/src/main/cpp/game.h
+          ./gradlew :module:assembleRelease
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zygisk-il2cppdumper
+          path: out/magisk_module_release/
